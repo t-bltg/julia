@@ -391,6 +391,7 @@ export
     first,
     hcat,
     hvcat,
+    hvncat,
     indexin,
     argmax,
     argmin,
@@ -503,6 +504,7 @@ export
     count,
     delete!,
     deleteat!,
+    keepat!,
     eltype,
     empty!,
     empty,
@@ -675,6 +677,7 @@ export
     istaskstarted,
     istaskfailed,
     lock,
+    @lock,
     notify,
     ReentrantLock,
     schedule,
@@ -698,9 +701,11 @@ export
 
 # missing values
     coalesce,
+    @coalesce,
     ismissing,
     missing,
     skipmissing,
+    @something,
     something,
     isnothing,
     nonmissingtype,
@@ -713,6 +718,7 @@ export
 # errors
     backtrace,
     catch_backtrace,
+    current_exceptions,
     error,
     rethrow,
     retry,
