@@ -308,7 +308,6 @@ static void jl_serialize_datatype(jl_serializer_state *s, jl_datatype_t *dt) JL_
     if (has_instance)
         jl_serialize_value(s, dt->instance);
     jl_serialize_value(s, dt->name);
-    jl_serialize_value(s, dt->names);
     jl_serialize_value(s, dt->parameters);
     jl_serialize_value(s, dt->super);
     jl_serialize_value(s, dt->types);
@@ -1323,8 +1322,6 @@ static jl_value_t *jl_deserialize_datatype(jl_serializer_state *s, int pos, jl_v
     }
     dt->name = (jl_typename_t*)jl_deserialize_value(s, (jl_value_t**)&dt->name);
     jl_gc_wb(dt, dt->name);
-    dt->names = (jl_svec_t*)jl_deserialize_value(s, (jl_value_t**)&dt->names);
-    jl_gc_wb(dt, dt->names);
     dt->parameters = (jl_svec_t*)jl_deserialize_value(s, (jl_value_t**)&dt->parameters);
     jl_gc_wb(dt, dt->parameters);
     dt->super = (jl_datatype_t*)jl_deserialize_value(s, (jl_value_t**)&dt->super);
