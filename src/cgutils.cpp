@@ -1590,7 +1590,7 @@ static bool emit_getfield_unknownidx(jl_codectx_t &ctx,
         Value *idx, jl_datatype_t *stt, jl_value_t *inbounds)
 {
     size_t nfields = jl_datatype_nfields(stt);
-    bool maybe_null = (unsigned)stt->ninitialized != nfields;
+    bool maybe_null = (unsigned)stt->name->n_uninitialized != 0;
     auto idx0 = [&]() {
         return emit_bounds_check(ctx, strct, (jl_value_t*)stt, idx, ConstantInt::get(T_size, nfields), inbounds);
     };
@@ -1727,7 +1727,8 @@ static jl_cgval_t emit_getfield_knownidx(jl_codectx_t &ctx, const jl_cgval_t &st
     }
     if (type_is_ghost(julia_type_to_llvm(ctx, jfty)))
         return ghostValue(jfty);
-    bool maybe_null = idx >= (unsigned)jt->ninitialized;
+    size_t nfields = jl_datatype_nfields(jt);
+    bool maybe_null = idx >= nfields - (unsigned)jt->name->n_uninitialized;
     size_t byte_offset = jl_field_offset(jt, idx);
     auto tbaa = strct.tbaa;
     if (tbaa == tbaa_datatype && byte_offset != offsetof(jl_datatype_t, types))

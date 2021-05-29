@@ -288,7 +288,7 @@ function isdefined_tfunc(@nospecialize(arg1), @nospecialize(sym))
             else
                 return Bottom
             end
-            if 1 <= idx <= a1.ninitialized
+            if 1 <= idx <= datatype_min_ninitialized(a1)
                 return Const(true)
             elseif a1.name === _NAMEDTUPLE_NAME
                 if isconcretetype(a1)
@@ -721,14 +721,14 @@ function getfield_nothrow(@nospecialize(s00), @nospecialize(name), @nospecialize
         s.name.abstract && return false
         # If all fields are always initialized, and bounds check is disabled, we can assume
         # we don't throw
-        if bounds_check_disabled && !isvatuple(s) && s.name !== NamedTuple.body.body.name && fieldcount(s) == s.ninitialized
+        if bounds_check_disabled && s.name.n_uninitialized == 0
             return true
         end
         # Else we need to know what the field is
         isa(name, Const) || return false
         field = try_compute_fieldidx(s, name.val)
         field === nothing && return false
-        field <= s.ninitialized && return true
+        field <= datatype_min_ninitialized(s) && return true
         # `try_compute_fieldidx` already check for field index bound.
         !isvatuple(s) && isbitstype(fieldtype(s0, field)) && return true
     end

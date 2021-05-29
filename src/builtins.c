@@ -1387,16 +1387,17 @@ JL_CALLABLE(jl_f__typebody)
         else {
             dt->types = (jl_svec_t*)ft;
             jl_gc_wb(dt, ft);
-            size_t i, nf = jl_svec_len(ft);
-            for (i = 0; i < nf; i++) {
-                jl_value_t *fld = jl_svecref(ft, i);
-                if (references_name(fld, dt->name, 1)) {
-                    dt->name->references_self = 1;
-                    break;
+            if (!dt->name->mutabl) {
+                dt->name->mayinlinealloc = 1;
+                size_t i, nf = jl_svec_len(ft);
+                for (i = 0; i < nf; i++) {
+                    jl_value_t *fld = jl_svecref(ft, i);
+                    if (references_name(fld, dt->name, 1)) {
+                        dt->name->mayinlinealloc = 0;
+                        break;
+                    }
                 }
             }
-            if (!dt->name->mutabl && !dt->name->references_self)
-                dt->name->mayinlinealloc = 1;
         }
     }
 
@@ -1422,8 +1423,10 @@ static int equiv_type(jl_value_t *ta, jl_value_t *tb)
     jl_datatype_t *dtb = (jl_datatype_t*)jl_unwrap_unionall(tb);
     if (!(jl_typeof(dta) == jl_typeof(dtb) &&
           dta->name->name == dtb->name->name &&
+          dta->name->abstract == dtb->name->abstract &&
+          dta->name->mutabl == dtb->name->mutabl &&
+          dta->name->n_uninitialized == dtb->name->n_uninitialized &&
           (jl_svec_len(jl_field_names(dta)) != 0 || dta->size == dtb->size) &&
-          dta->ninitialized == dtb->ninitialized &&
           jl_egal((jl_value_t*)jl_field_names(dta), (jl_value_t*)jl_field_names(dtb)) &&
           jl_nparams(dta) == jl_nparams(dtb)))
         return 0;
