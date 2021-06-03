@@ -631,46 +631,100 @@ firstindex(::UnitRange) = 1
 firstindex(::StepRange) = 1
 firstindex(::LinRange) = 1
 
-length(r::AbstractUnitRange) = Integer(last(r) - first(r) + step(r))
+# n.b. checked_length for these is defined iff checked_add and checked_sub are
+# defined between the relevant types
+function checked_length(r::OrdinalRange{T}) where T
+    s = step(r)
+    # s != 0, by construction, but avoids the division error later
+    start = first(r)
+    if s == zero(s) || isempty(r)
+        return Integer(start - start + zero(s))
+    end
+    return Integer(div(checked_add(checked_sub(last(r), start), s, s)))
+end
+
+function checked_length(r::AbstractUnitRange{T}) where T
+    # compiler optimization: remove dead cases from above
+    if isempty(r)
+        return Integer(first(r) - first(r))
+    end
+    a = Integer(checked_add(checked_sub(last(r), first(r))))
+    return a + one(a)
+end
+
+function length(r::OrdinalRange{T}) where T
+    s = step(r)
+    # s != 0, by construction, but avoids the division error later
+    start = first(r)
+    if s == zero(s) || isempty(r)
+        return Integer(start - start + zero(s))
+    end
+    return Integer(div(last(r) - start + s, s))
+end
+
+function length(r::AbstractUnitRange{T}) where T
+    @_inline_meta
+    a = Integer(last(r) - first(r)) # even when isempty, by construction (with overflow)
+    return a + one(a)
+end
+
 length(r::OneTo) = Integer(r.stop - zero(r.stop))
 length(r::StepRangeLen) = r.len
 length(r::LinRange) = r.len
-length(r::StepRange) = Integer(div(r.stop - r.start + r.step, r.step))
 
-# compile optimizations for which promote_type(T, Int) = T
-let bigint = Union{Int,UInt,Int64,UInt64,Int128,UInt128}
+let bigints = Union{Int, UInt, Int64, UInt64, Int128, UInt128}
     global length
-    function length(r::StepRange{T}) where T<:bigint
-        step = r.step
-        diff = r.stop - r.start
-        step == 0 && return zero(T) # unreachable, by construction, but avoids the error case here later
+    # compile optimization for which promote_type(T, Int) == T
+    length(r::OneTo{T}) where {T<:bigints} = r.stop
+    # slightly more accurate length and checked_length in extreme cases
+    # (near typemax) for types with known `unsigned` functions
+    function length(r::OrdinalRange{T}) where T<:bigints
+        s = step(r)
+        s == zero(s) && return zero(T) # unreachable, by construction, but avoids the error case here later
         isempty(r) && return zero(T)
-        if -1 <= step <= 1 || step == -step || step isa Unsigned # n.b. !(step isa T)
-            # if |step| > 1, diff might have overflowed, but unsigned(diff)÷step should
-            # therefore still be valid (if the result is representable at all)
-            return div(diff, step) % T + one(T)
-        elseif step < 0
-            return div(unsigned(-diff), -step) % T + one(T)
+        diff = last(r) - first(r)
+        # if |s| > 1, diff might have overflowed, but unsigned(diff)÷s should
+        # therefore still be valid (if the result is representable at all)
+        # n.b. !(s isa T)
+        if s isa Unsigned || -1 <= s <= 1 || s == -s
+            a = div(diff, s)
+        elseif s < 0
+            a = div(unsigned(-diff), -s) % typeof(diff)
         else
-            return div(unsigned(diff), step) % T + one(T)
+            a = div(unsigned(diff), s) % typeof(diff)
         end
+        return Integer(a) + one(a)
     end
-
-    function length(r::AbstractUnitRange{T}) where T<:bigint
-        @_inline_meta
-        return last(r) - first(r) + one(T) # even when isempty, by construction (with overflow)
+    function checked_length(r::OrdinalRange{T}) where T<:bigints
+        s = step(r)
+        s == zero(s) && return zero(T) # unreachable, by construction, but avoids the error case here later
+        isempty(r) && return zero(T)
+        stop, start = last(r), first(r)
+        # n.b. !(s isa T)
+        if s > 1
+            diff = stop - start
+            a = convert(T, div(unsigned(diff), s))
+        elseif s < -1
+            diff = start - stop
+            a = convert(T, div(unsigned(diff), -s))
+        elseif s > 0
+            a = div(checked_sub(stop, start), s)
+        else
+            a = div(checked_sub(start, stop), -s)
+        end
+        return checked_add(a, one(a))
     end
-    length(r::OneTo{T}) where {T<:bigint} = r.stop
 end
 
 # some special cases to favor default Int type
-let smallint = (Int === Int64 ?
-                Union{Int8,UInt8,Int16,UInt16,Int32,UInt32} :
-                Union{Int8,UInt8,Int16,UInt16})
+let smallints = (Int === Int64 ?
+                Union{Int8, UInt8, Int16, UInt16, Int32, UInt32} :
+                Union{Int8, UInt8, Int16, UInt16})
     global length
-    length(r::StepRange{<:smallint}) = div(Int(r.stop) - Int(r.start) + r.step, r.step) # n.b. !(step isa T)
-    length(r::AbstractUnitRange{<:smallint}) = Int(last(r)) - Int(first(r)) + 1
-    length(r::OneTo{<:smallint}) = Int(r.stop)
+    # n.b. !(step isa T)
+    length(r::OrdinalRange{<:smallints}) = div(Int(last(r)) - Int(first(r)) + step(r), step(r))
+    length(r::AbstractUnitRange{<:smallints}) = Int(last(r)) - Int(first(r)) + 1
+    length(r::OneTo{<:smallints}) = Int(r.stop)
 end
 
 first(r::OrdinalRange{T}) where {T} = convert(T, r.start)
