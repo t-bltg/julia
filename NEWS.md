@@ -89,6 +89,7 @@ Standard library changes
 * `range` now supports `start` as an optional keyword argument ([#38041]).
 * Some operations on ranges will return a `StepRangeLen` instead of a `StepRange`, to allow the resulting step to be zero. Previously, `λ .* (1:9)` gave an error when `λ = 0`. ([#40320])
 * `islowercase` and `isuppercase` are now compliant with the Unicode lower/uppercase categories ([#38574]).
+* `Printf` now uses `textwidth` for formatting `%s` and `%c` widths ([#41068]).
 * `iseven` and `isodd` functions now support non-`Integer` numeric types ([#38976]).
 * `escape_string` can now receive a collection of characters in the keyword
   `keep` that are to be kept as they are. ([#38597]).
