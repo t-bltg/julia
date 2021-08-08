@@ -660,6 +660,15 @@ Trailing whitespace is left unaltered.
 
 Triple-quoted string literals can contain `"` characters without escaping.
 
+However, nested triple-quoted strings must be escaped:
+
+```jldoctest
+julia> """
+triple = \"""Nested triple-quoted
+         string\"""
+"""
+```
+
 Note that line breaks in literal strings, whether single- or triple-quoted, result in a newline
 (LF) character `\n` in the string, even if your editor uses a carriage return `\r` (CR) or CRLF
 combination to end lines. To include a CR in a string, use an explicit escape `\r`; for example,
