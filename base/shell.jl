@@ -19,7 +19,7 @@ end
 function shell_parse(str::AbstractString, interpolate::Bool=true;
                      special::AbstractString="", filename="none")
     s = SubString(str, firstindex(str))
-    s = rstrip_shell(lstrip(s))
+    s = rstrip_shell(lstrip(x -> isspace(x) || x == ';', s))
 
     # N.B.: This is used by REPLCompletions
     last_parse = 0:-1
