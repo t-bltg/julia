@@ -2608,7 +2608,7 @@ Alias for `UndefInitializer()`, which constructs an instance of the singleton ty
 [`UndefInitializer`](@ref), used in array initialization to indicate the
 array-constructor-caller would like an uninitialized array.
 
-See also: [`missing`](@ref), [`similar`](@ref).
+See also: [`missing`](@ref), [`similar`](@ref), [`isassigned`](@ref).
 
 # Examples
 ```julia-repl
